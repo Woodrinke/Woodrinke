@@ -1,3 +1,4 @@
+import hashlib
 import sys
 import re
 import jieba
@@ -12,6 +13,12 @@ def clean_text(raw_text: str) -> str:
     chinese_only = re.sub(r"[^\u4e00-\u9fff]", "", raw_text)
     return chinese_only.strip()
 
+def stable_hash(word: str) -> int:
+    """
+    稳定的字符串哈希函数。
+    用 md5 代替内置 hash()，保证跨进程、跨机器结果一致。
+    """
+    return int(hashlib.md5(word.encode("utf-8")).hexdigest(), 16)
 
 def get_simhash(cleaned_text: str) -> int:
     """生成64位simhash指纹，输入清洗后的中文文本，返回64位整数指纹"""
@@ -25,7 +32,7 @@ def get_simhash(cleaned_text: str) -> int:
     # 初始化64位权重数组
     v = [0] * 64
     for word in words:
-        h = hash(word)
+        h = stable_hash(word)
         for i in range(64):
             bit = (h >> i) & 1
             if bit == 1:
