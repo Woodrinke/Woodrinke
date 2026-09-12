@@ -1,3 +1,4 @@
+import sys
 import pytest
 from main import (
     clean_text,
@@ -5,6 +6,7 @@ from main import (
     hamming_distance,
     calculate_similarity,
     read_text_file,
+    main,
 )
 
 
@@ -101,3 +103,48 @@ def test_read_path_is_dir(tmp_path):
     """传进来是目录，应退出程序"""
     with pytest.raises(SystemExit):
         read_text_file(str(tmp_path))
+
+
+# ==================== 6. read_text_file 成功读取 ====================
+
+def test_read_file_success(tmp_path):
+    """正常文件，应返回文件内容"""
+    p = tmp_path / "sample.txt"
+    p.write_text("今天是星期天，天气晴。", encoding="utf-8")
+    content = read_text_file(str(p))
+    assert content == "今天是星期天，天气晴。"
+
+
+# ==================== 7. main 函数测试 ====================
+
+def test_main_wrong_argc(monkeypatch, capsys):
+    """参数数量不是4个，应打印用法并退出"""
+    monkeypatch.setattr(sys, "argv", ["main.py", "only_one_arg"])
+    with pytest.raises(SystemExit):
+        main()
+    captured = capsys.readouterr()
+    assert "用法" in captured.out
+
+
+def test_main_normal_run(tmp_path, monkeypatch):
+    """正常三个参数，应写出答案文件"""
+    # 准备原文和抄袭文
+    orig = tmp_path / "orig.txt"
+    add = tmp_path / "add.txt"
+    out = tmp_path / "ans.txt"
+    orig.write_text("今天是星期天，天气晴，今天晚上我要去看电影。", encoding="utf-8")
+    add.write_text("今天是周天，天气晴朗，我晚上要去看电影。", encoding="utf-8")
+
+    # 模拟命令行参数
+    monkeypatch.setattr(
+        sys, "argv",
+        ["main.py", str(orig), str(add), str(out)]
+    )
+
+    main()
+
+    # 验证输出文件存在，且内容是两位小数的浮点
+    assert out.exists()
+    content = out.read_text(encoding="utf-8")
+    float(content)  # 能转成 float 就说明格式对
+    assert len(content.split(".")[-1]) == 2  # 小数点后两位
