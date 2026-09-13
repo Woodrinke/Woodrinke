@@ -4,6 +4,7 @@ import re
 import jieba
 from functools import lru_cache
 
+
 # 简易中文停用词表
 STOP_WORDS = {"的", "了", "是", "我", "在", "和", "就", "都", "而", "及", "与", "之", "也"}
 
