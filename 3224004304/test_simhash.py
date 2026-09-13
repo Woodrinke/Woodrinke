@@ -148,3 +148,41 @@ def test_main_normal_run(tmp_path, monkeypatch):
     content = out.read_text(encoding="utf-8")
     float(content)  # 能转成 float 就说明格式对
     assert len(content.split(".")[-1]) == 2  # 小数点后两位
+
+
+
+# ==================== 8. 补充异常分支测试 ====================
+
+def test_read_file_wrong_encoding(tmp_path):
+    """非 UTF-8 编码文件，应退出程序"""
+    p = tmp_path / "gbk.txt"
+    p.write_bytes("中文内容".encode("gbk"))
+    with pytest.raises(SystemExit):
+        read_text_file(str(p))
+
+
+def test_main_output_permission_error(tmp_path, monkeypatch, mocker):
+    """输出文件无写权限，应退出程序"""
+    orig = tmp_path / "orig.txt"
+    add = tmp_path / "add.txt"
+    out = tmp_path / "ans.txt"
+    orig.write_text("今天是星期天，天气晴。", encoding="utf-8")
+    add.write_text("今天是周天，天气晴朗。", encoding="utf-8")
+
+    monkeypatch.setattr(
+        sys, "argv",
+        ["main.py", str(orig), str(add), str(out)]
+    )
+
+    real_open = open  # 保存真正的 open
+
+    def fake_open(path, mode="r", *args, **kwargs):
+        # 只有写模式才抛异常，读模式正常放行
+        if "w" in mode:
+            raise PermissionError
+        return real_open(path, mode, *args, **kwargs)
+
+    mocker.patch("builtins.open", side_effect=fake_open)
+
+    with pytest.raises(SystemExit):
+        main()
