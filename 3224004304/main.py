@@ -2,6 +2,7 @@ import hashlib
 import sys
 import re
 import jieba
+from functools import lru_cache
 
 # 简易中文停用词表
 STOP_WORDS = {"的", "了", "是", "我", "在", "和", "就", "都", "而", "及", "与", "之", "也"}
@@ -20,6 +21,7 @@ def stable_hash(word: str) -> int:
     """
     return int(hashlib.md5(word.encode("utf-8")).hexdigest(), 16)
 
+@lru_cache(maxsize=128)
 def get_simhash(cleaned_text: str) -> int:
     """生成64位simhash指纹，输入清洗后的中文文本，返回64位整数指纹"""
     if not cleaned_text:
