@@ -23,14 +23,15 @@ def stable_hash(word: str) -> int:
     return int(hashlib.md5(word.encode("utf-8")).hexdigest(), 16)
 
 @lru_cache(maxsize=128)
+@lru_cache(maxsize=128)
 def get_simhash(cleaned_text: str) -> int:
     """生成64位simhash指纹，输入清洗后的中文文本，返回64位整数指纹"""
-    if not cleaned_text:
+    if not cleaned_text or len(cleaned_text) < 3:
         return 0
 
-    words = jieba.lcut(cleaned_text)
-    # 过滤停用词
-    words = [w for w in words if w not in STOP_WORDS]
+    # 3-gram 字符切分，替代 jieba 分词
+    n = 3
+    words = [cleaned_text[i:i + n] for i in range(len(cleaned_text) - n + 1)]
 
     # 初始化64位权重数组
     v = [0] * 64
@@ -48,7 +49,6 @@ def get_simhash(cleaned_text: str) -> int:
         if v[i] > 0:
             fingerprint |= (1 << i)
     return fingerprint
-
 
 def hamming_distance(hash1: int, hash2: int) -> int:
     """计算两个64位指纹的海明距离，返回不同bit数量 0~64"""
